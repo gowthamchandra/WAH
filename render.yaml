@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: safety-checklist-api
+    runtime: node
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: MONGO_URI
+        sync: false
+      - key: ALLOWED_ORIGINS
+        sync: false
+      - key: HOST
+        value: 0.0.0.0

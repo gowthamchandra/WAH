@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Safety Checklist Portal</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="page">
+      <section class="panel">
+        <div class="panel-header">
+          <div>
+            <p class="eyebrow">Safety Inspection</p>
+            <h1>Safety Checklist Portal</h1>
+          </div>
+          <div class="api-box">
+            <label for="apiUrl">API URL</label>
+            <input id="apiUrl" type="text" />
+          </div>
+        </div>
+
+        <div class="toolbar">
+          <label class="field">
+            <span>Inspector Name</span>
+            <input id="inspector" type="text" placeholder="Enter inspector name" />
+          </label>
+          <div class="actions">
+            <button id="submitBtn" type="button">Submit Checklist</button>
+            <button id="loadBtn" type="button" class="secondary-btn">View Saved Data</button>
+          </div>
+        </div>
+
+        <div class="status-row">
+          <span id="statusText">Ready</span>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Sr. No</th>
+                <th>Description of Checks</th>
+                <th>Status</th>
+                <th>Remarks</th>
+              </tr>
+            </thead>
+            <tbody id="checklistBody"></tbody>
+          </table>
+        </div>
+
+        <section class="records-panel">
+          <div class="records-header">
+            <div>
+              <p class="eyebrow">Saved Records</p>
+              <h2>Recent Submissions</h2>
+            </div>
+          </div>
+          <div id="recordsEmpty" class="records-empty">No records loaded yet.</div>
+          <div id="recordsList" class="records-list"></div>
+        </section>
+      </section>
+    </main>
+
+    <script src="./config.js"></script>
+    <script src="./app.js"></script>
+  </body>
+  </html>
