@@ -61,6 +61,14 @@ const responseSchema = new mongoose.Schema(
 
 const Response = mongoose.model('Response', responseSchema);
 
+app.get('/', (req, res) => {
+  res.json({
+    ok: true,
+    service: 'safety-checklist-api',
+    endpoints: ['/api/health', '/api/submit', '/api/responses']
+  });
+});
+
 app.get('/api/health', (req, res) => {
   res.status(databaseReady ? 200 : 503).json({
     ok: databaseReady,
