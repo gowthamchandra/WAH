@@ -8,48 +8,114 @@
   </head>
   <body>
     <main class="page">
-      <section class="panel">
-        <div class="panel-header">
-          <div>
+      <section class="shell">
+        <header class="hero">
+          <div class="hero-copy">
             <p class="eyebrow">Safety Inspection</p>
             <h1>Safety Checklist Portal</h1>
+            <p class="hero-text">
+              Capture ladder inspections, monitor backend readiness, and review recent submissions
+              from one operational workspace.
+            </p>
           </div>
-          <div class="api-box">
-            <label for="apiUrl">API URL</label>
-            <input id="apiUrl" type="text" />
+
+          <div class="hero-card">
+            <span class="hero-card-label">Current checklist</span>
+            <strong>A-Type Ladder</strong>
+            <span class="hero-card-note">Structured for quick field entry and review.</span>
           </div>
-        </div>
+        </header>
 
-        <div class="toolbar">
-          <label class="field">
-            <span>Inspector Name</span>
-            <input id="inspector" type="text" placeholder="Enter inspector name" />
-          </label>
-          <div class="actions">
-            <button id="submitBtn" type="button">Submit Checklist</button>
-            <button id="loadBtn" type="button" class="secondary-btn">View Saved Data</button>
-          </div>
-        </div>
+        <section class="overview-grid" aria-label="Overview">
+          <article class="overview-card">
+            <span class="overview-label">Backend</span>
+            <strong id="backendStatus">Checking connection...</strong>
+            <span id="backendHint" class="overview-note">Waiting for health check.</span>
+          </article>
 
-        <div class="status-row">
-          <span id="statusText">Ready</span>
-        </div>
+          <article class="overview-card">
+            <span class="overview-label">Checklist items</span>
+            <strong id="checkCount">0</strong>
+            <span class="overview-note">Standard ladder checkpoints.</span>
+          </article>
 
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Sr. No</th>
-                <th>Description of Checks</th>
-                <th>Status</th>
-                <th>Remarks</th>
-              </tr>
-            </thead>
-            <tbody id="checklistBody"></tbody>
-          </table>
-        </div>
+          <article class="overview-card">
+            <span class="overview-label">Saved records</span>
+            <strong id="recordsCount">0</strong>
+            <span class="overview-note">Most recent submissions loaded here.</span>
+          </article>
+        </section>
 
-        <section class="records-panel">
+        <section class="workspace">
+          <section class="panel inspection-panel">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">Inspection Form</p>
+                <h2>Record a checklist</h2>
+              </div>
+            </div>
+
+            <div class="control-grid">
+              <label class="field field-wide">
+                <span>Inspector Name</span>
+                <input id="inspector" type="text" placeholder="Enter inspector name" />
+              </label>
+
+              <details class="api-details">
+                <summary>API configuration</summary>
+                <label class="field api-box" for="apiUrl">
+                  <span>Submit endpoint</span>
+                  <input id="apiUrl" type="text" />
+                </label>
+                <p class="field-help">Expected format: `https://your-api-domain/api/submit`</p>
+              </details>
+            </div>
+
+            <div class="status-row" aria-live="polite">
+              <span id="statusText">Ready</span>
+            </div>
+
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Sr. No</th>
+                    <th>Description of Checks</th>
+                    <th>Status</th>
+                    <th>Remarks</th>
+                  </tr>
+                </thead>
+                <tbody id="checklistBody"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <aside class="panel action-panel">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">Submission</p>
+                <h2>Actions</h2>
+              </div>
+            </div>
+
+            <div class="action-stack">
+              <button id="submitBtn" type="button">Submit Checklist</button>
+              <button id="loadBtn" type="button" class="secondary-btn">View Saved Data</button>
+            </div>
+
+            <div class="info-block">
+              <span class="info-label">Current endpoint</span>
+              <code id="apiPreview"></code>
+            </div>
+
+            <div class="info-block">
+              <span class="info-label">Workflow</span>
+              <p>Fill inspector details, review statuses, submit, then refresh saved records.</p>
+            </div>
+          </aside>
+        </section>
+
+        <section class="panel records-panel">
           <div class="records-header">
             <div>
               <p class="eyebrow">Saved Records</p>
@@ -65,4 +131,4 @@
     <script src="./config.js"></script>
     <script src="./app.js"></script>
   </body>
-  </html>
+</html>

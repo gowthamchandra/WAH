@@ -14,12 +14,17 @@ const CHECKS = [
 const checklistBody = document.getElementById('checklistBody');
 const inspectorInput = document.getElementById('inspector');
 const apiUrlInput = document.getElementById('apiUrl');
+const apiPreview = document.getElementById('apiPreview');
 const submitButton = document.getElementById('submitBtn');
 const loadButton = document.getElementById('loadBtn');
 const statusText = document.getElementById('statusText');
 const statusRow = document.querySelector('.status-row');
 const recordsList = document.getElementById('recordsList');
 const recordsEmpty = document.getElementById('recordsEmpty');
+const backendStatus = document.getElementById('backendStatus');
+const backendHint = document.getElementById('backendHint');
+const checkCount = document.getElementById('checkCount');
+const recordsCount = document.getElementById('recordsCount');
 
 function getConfiguredApiBaseUrl() {
   const configuredBaseUrl = window.APP_CONFIG?.API_BASE_URL?.trim();
@@ -28,7 +33,11 @@ function getConfiguredApiBaseUrl() {
     return configuredBaseUrl.replace(/\/+$/, '');
   }
 
-  if (window.location.port === '3000' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+  if (
+    window.location.port === '3000' ||
+    window.location.hostname === 'localhost' ||
+    window.location.hostname === '127.0.0.1'
+  ) {
     return `${window.location.protocol}//${window.location.hostname}:5001`;
   }
 
@@ -39,11 +48,24 @@ function buildApiUrl(pathname) {
   return `${getConfiguredApiBaseUrl()}${pathname}`;
 }
 
-apiUrlInput.value = buildApiUrl('/api/submit');
+function getNormalizedSubmitUrl(value) {
+  const rawValue = value.trim();
 
-function setStatus(message, type = '') {
-  statusText.textContent = message;
-  statusRow.className = `status-row ${type}`.trim();
+  if (!rawValue) return '';
+
+  try {
+    const url = new URL(rawValue);
+
+    if (url.pathname === '/' || url.pathname === '') {
+      url.pathname = '/api/submit';
+    } else if (url.pathname === '/api' || url.pathname === '/api/') {
+      url.pathname = '/api/submit';
+    }
+
+    return url.toString();
+  } catch (error) {
+    return rawValue;
+  }
 }
 
 function getResponsesUrl() {
@@ -62,22 +84,55 @@ function getResponsesUrl() {
   }
 }
 
+function getHealthUrl() {
+  const apiUrl = apiUrlInput.value.trim();
+
+  if (!apiUrl) return '';
+
+  try {
+    const url = new URL(apiUrl);
+    url.pathname = '/api/health';
+    url.search = '';
+    url.hash = '';
+    return url.toString();
+  } catch (error) {
+    return '';
+  }
+}
+
+function updateApiPreview() {
+  apiPreview.textContent = apiUrlInput.value.trim() || 'Not configured';
+}
+
+function updateBackendCard(message, note = '', tone = '') {
+  backendStatus.textContent = message;
+  backendHint.textContent = note;
+  backendStatus.className = tone ? `tone-${tone}` : '';
+}
+
+function setStatus(message, type = '') {
+  statusText.textContent = message;
+  statusRow.className = `status-row ${type}`.trim();
+}
+
 function renderChecklist() {
   checklistBody.innerHTML = CHECKS.map((item, index) => `
     <tr>
-      <td>${index + 1}</td>
-      <td>${item}</td>
-      <td>
+      <td data-label="Sr. No">${index + 1}</td>
+      <td data-label="Description of Checks">${item}</td>
+      <td data-label="Status">
         <select data-role="status">
           <option value="OK">OK</option>
           <option value="NOT OK">NOT OK</option>
         </select>
       </td>
-      <td>
+      <td data-label="Remarks">
         <input data-role="remarks" type="text" placeholder="Add remarks" />
       </td>
     </tr>
   `).join('');
+
+  checkCount.textContent = String(CHECKS.length);
 }
 
 function collectRows() {
@@ -98,6 +153,8 @@ function formatDate(value) {
 }
 
 function renderResponses(records) {
+  recordsCount.textContent = String(records.length);
+
   if (!records.length) {
     recordsList.innerHTML = '';
     recordsEmpty.textContent = 'No submissions found in MongoDB.';
@@ -124,6 +181,36 @@ function renderResponses(records) {
       </div>
     </article>
   `).join('');
+}
+
+async function checkBackendHealth() {
+  const healthUrl = getHealthUrl();
+
+  if (!healthUrl) {
+    updateBackendCard('Endpoint missing', 'Add a valid submit endpoint to enable health checks.', 'error');
+    return;
+  }
+
+  updateBackendCard('Checking connection...', 'Querying the backend health endpoint.', '');
+
+  try {
+    const response = await fetch(healthUrl);
+    const data = await response.json().catch(() => ({}));
+
+    if (response.ok && data.ok) {
+      updateBackendCard('Connected', 'Backend and database are available.', 'success');
+      return;
+    }
+
+    if (response.status === 503 && data.databaseReady === false) {
+      updateBackendCard('Database offline', 'Backend is running, but MongoDB is not connected.', 'error');
+      return;
+    }
+
+    updateBackendCard('Backend issue', data.message || `Health check returned ${response.status}.`, 'error');
+  } catch (error) {
+    updateBackendCard('Unreachable', 'Unable to reach the backend from this frontend.', 'error');
+  }
 }
 
 async function loadResponses() {
@@ -205,6 +292,7 @@ async function submitChecklist() {
 
     setStatus(data.message || 'Checklist submitted successfully.', 'success');
     await loadResponses();
+    await checkBackendHealth();
   } catch (error) {
     setStatus(error.message || 'Unable to reach the backend.', 'error');
   } finally {
@@ -212,6 +300,18 @@ async function submitChecklist() {
   }
 }
 
+apiUrlInput.value = buildApiUrl('/api/submit');
+apiUrlInput.addEventListener('blur', () => {
+  apiUrlInput.value = getNormalizedSubmitUrl(apiUrlInput.value);
+  updateApiPreview();
+  checkBackendHealth();
+});
+apiUrlInput.addEventListener('input', updateApiPreview);
+
 renderChecklist();
+renderResponses([]);
+updateApiPreview();
+checkBackendHealth();
+
 submitButton.addEventListener('click', submitChecklist);
 loadButton.addEventListener('click', loadResponses);
