@@ -12,6 +12,7 @@ const allowedOrigins = (process.env.ALLOWED_ORIGINS || '')
   .split(',')
   .map((origin) => origin.trim())
   .filter(Boolean);
+let databaseReady = false;
 
 app.use(
   cors({
@@ -61,11 +62,18 @@ const responseSchema = new mongoose.Schema(
 const Response = mongoose.model('Response', responseSchema);
 
 app.get('/api/health', (req, res) => {
-  res.json({ ok: true });
+  res.status(databaseReady ? 200 : 503).json({
+    ok: databaseReady,
+    databaseReady
+  });
 });
 
 app.post('/api/submit', async (req, res) => {
   try {
+    if (!databaseReady) {
+      return res.status(503).json({ message: 'Database is not connected yet.' });
+    }
+
     const { inspector, type, items } = req.body;
 
     if (!inspector || !Array.isArray(items) || items.length === 0) {
@@ -89,6 +97,10 @@ app.post('/api/submit', async (req, res) => {
 
 app.get('/api/responses', async (req, res) => {
   try {
+    if (!databaseReady) {
+      return res.status(503).json({ message: 'Database is not connected yet.' });
+    }
+
     const responses = await Response.find().sort({ createdAt: -1 });
     res.json(responses);
   } catch (error) {
@@ -97,12 +109,14 @@ app.get('/api/responses', async (req, res) => {
 });
 
 async function start() {
+  app.listen(PORT, HOST, () => {
+    console.log(`Server running on http://${HOST}:${PORT}`);
+  });
+
   try {
     await mongoose.connect(process.env.MONGO_URI);
+    databaseReady = true;
     console.log('MongoDB connected');
-    app.listen(PORT, HOST, () => {
-      console.log(`Server running on http://${HOST}:${PORT}`);
-    });
   } catch (error) {
     console.error('MongoDB connection error:', error.message);
   }
