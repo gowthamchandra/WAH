@@ -3,127 +3,104 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Safety Checklist Portal</title>
+    <title>Hindalco Industries Belagavi</title>
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
     <main class="page">
       <section class="shell">
-        <header class="hero">
-          <div class="hero-copy">
-            <p class="eyebrow">Safety Inspection</p>
-            <h1>Safety Checklist Portal</h1>
-            <p class="hero-text">
-              Capture ladder inspections, monitor backend readiness, and review recent submissions
-              from one operational workspace.
-            </p>
-          </div>
-
-          <div class="hero-card">
-            <span class="hero-card-label">Current checklist</span>
-            <strong>A-Type Ladder</strong>
-            <span class="hero-card-note">Structured for quick field entry and review.</span>
-          </div>
-        </header>
-
-        <section class="overview-grid" aria-label="Overview">
-          <article class="overview-card">
-            <span class="overview-label">Backend</span>
-            <strong id="backendStatus">Checking connection...</strong>
-            <span id="backendHint" class="overview-note">Waiting for health check.</span>
-          </article>
-
-          <article class="overview-card">
-            <span class="overview-label">Checklist items</span>
-            <strong id="checkCount">0</strong>
-            <span class="overview-note">Standard ladder checkpoints.</span>
-          </article>
-
-          <article class="overview-card">
-            <span class="overview-label">Saved records</span>
-            <strong id="recordsCount">0</strong>
-            <span class="overview-note">Most recent submissions loaded here.</span>
-          </article>
-        </section>
-
-        <section class="workspace">
-          <section class="panel inspection-panel">
-            <div class="section-heading">
+        <section class="hero">
+          <div class="hero-main">
+            <div class="brand-lockup">
+              <span class="brand-mark">H</span>
               <div>
-                <p class="eyebrow">Inspection Form</p>
-                <h2>Record a checklist</h2>
+                <p class="brand-name">Hindalco Industries</p>
+                <p class="brand-place">Belagavi Works</p>
               </div>
             </div>
+            <div class="hero-copy">
+              <p class="eyebrow">Field Inspection</p>
+              <h1>WAH Safety Inspection</h1>
+              <p class="hero-note">Designed for quick shop-floor entry on mobile and desktop.</p>
+            </div>
+          </div>
+          <div class="hero-side">
+            <div class="topbar-status">
+              <span class="status-chip-label">Backend</span>
+              <strong id="backendStatus">Checking...</strong>
+              <span id="backendHint">Waiting for health check.</span>
+            </div>
 
-            <div class="control-grid">
-              <label class="field field-wide">
-                <span>Inspector Name</span>
-                <input id="inspector" type="text" placeholder="Enter inspector name" />
+            <div class="hero-meta">
+            <article class="meta-card">
+              <span>Saved Records</span>
+              <strong id="recordsCount">0</strong>
+            </article>
+            </div>
+          </div>
+        </section>
+
+        <section class="layout">
+          <section class="main-column">
+            <section class="panel form-panel">
+              <div class="form-head">
+                <div>
+                  <p class="eyebrow">Inspection Entry</p>
+                  <h2>Fill and submit</h2>
+                </div>
+                <details class="api-details">
+                  <summary>Connection</summary>
+                  <label class="field" for="apiUrl">
+                    <span>Submit URL</span>
+                    <input id="apiUrl" type="text" />
+                  </label>
+                </details>
+              </div>
+
+              <label class="field">
+                <span>Inspector name</span>
+                <input id="inspector" type="text" placeholder="Enter name" />
               </label>
 
-              <details class="api-details">
-                <summary>API configuration</summary>
-                <label class="field api-box" for="apiUrl">
-                  <span>Submit endpoint</span>
-                  <input id="apiUrl" type="text" />
-                </label>
-                <p class="field-help">Expected format: `https://your-api-domain/api/submit`</p>
-              </details>
-            </div>
+              <div class="status-row" aria-live="polite">
+                <span id="statusText">Ready</span>
+              </div>
 
-            <div class="status-row" aria-live="polite">
-              <span id="statusText">Ready</span>
-            </div>
+              <div id="checklistBody" class="checklist-grid"></div>
+            </section>
 
-            <div class="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Sr. No</th>
-                    <th>Description of Checks</th>
-                    <th>Status</th>
-                    <th>Remarks</th>
-                  </tr>
-                </thead>
-                <tbody id="checklistBody"></tbody>
-              </table>
-            </div>
+            <section class="panel records-panel">
+              <div class="section-title">
+                <div>
+                  <p class="eyebrow">Recent Data</p>
+                  <h2>Saved submissions</h2>
+                </div>
+              </div>
+              <div id="recordsEmpty" class="records-empty">No records loaded yet.</div>
+              <div id="recordsList" class="records-list"></div>
+            </section>
           </section>
 
-          <aside class="panel action-panel">
-            <div class="section-heading">
-              <div>
-                <p class="eyebrow">Submission</p>
-                <h2>Actions</h2>
+          <aside class="side-column">
+            <section class="panel action-panel">
+              <div class="section-title">
+                <div>
+                  <p class="eyebrow">Actions</p>
+                  <h2>Complete inspection</h2>
+                </div>
               </div>
-            </div>
 
-            <div class="action-stack">
-              <button id="submitBtn" type="button">Submit Checklist</button>
-              <button id="loadBtn" type="button" class="secondary-btn">View Saved Data</button>
-            </div>
+              <div class="action-stack">
+                <button id="submitBtn" type="button">Submit Checklist</button>
+                <button id="loadBtn" type="button" class="secondary-btn">Load Saved Data</button>
+              </div>
 
-            <div class="info-block">
-              <span class="info-label">Current endpoint</span>
-              <code id="apiPreview"></code>
-            </div>
-
-            <div class="info-block">
-              <span class="info-label">Workflow</span>
-              <p>Fill inspector details, review statuses, submit, then refresh saved records.</p>
-            </div>
+              <div class="info-card compact">
+                <span class="info-label">Use</span>
+                <p>Tap OK or NOT OK for each item and add remarks only where needed.</p>
+              </div>
+            </section>
           </aside>
-        </section>
-
-        <section class="panel records-panel">
-          <div class="records-header">
-            <div>
-              <p class="eyebrow">Saved Records</p>
-              <h2>Recent Submissions</h2>
-            </div>
-          </div>
-          <div id="recordsEmpty" class="records-empty">No records loaded yet.</div>
-          <div id="recordsList" class="records-list"></div>
         </section>
       </section>
     </main>

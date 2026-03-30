@@ -1,20 +1,19 @@
 const CHECKS = [
-  'Rail Damaged (cracks, deformation etc.)',
+  'Rail damaged or deformed',
   'Rung broken',
-  'Rung Missing',
+  'Rung missing',
   'Rungs clean',
   'Rung distance uneven',
-  'Bottom non-skid pad damaged/missing',
-  'Top hook damaged/missing',
+  'Bottom non-skid pad damaged or missing',
+  'Top hook damaged or missing',
   'Rungs loose',
   'Non-slip bases',
-  'Any other (specify)'
+  'Any other issue'
 ];
 
 const checklistBody = document.getElementById('checklistBody');
 const inspectorInput = document.getElementById('inspector');
 const apiUrlInput = document.getElementById('apiUrl');
-const apiPreview = document.getElementById('apiPreview');
 const submitButton = document.getElementById('submitBtn');
 const loadButton = document.getElementById('loadBtn');
 const statusText = document.getElementById('statusText');
@@ -23,7 +22,6 @@ const recordsList = document.getElementById('recordsList');
 const recordsEmpty = document.getElementById('recordsEmpty');
 const backendStatus = document.getElementById('backendStatus');
 const backendHint = document.getElementById('backendHint');
-const checkCount = document.getElementById('checkCount');
 const recordsCount = document.getElementById('recordsCount');
 
 function getConfiguredApiBaseUrl() {
@@ -56,9 +54,7 @@ function getNormalizedSubmitUrl(value) {
   try {
     const url = new URL(rawValue);
 
-    if (url.pathname === '/' || url.pathname === '') {
-      url.pathname = '/api/submit';
-    } else if (url.pathname === '/api' || url.pathname === '/api/') {
+    if (url.pathname === '/' || url.pathname === '' || url.pathname === '/api' || url.pathname === '/api/') {
       url.pathname = '/api/submit';
     }
 
@@ -68,40 +64,20 @@ function getNormalizedSubmitUrl(value) {
   }
 }
 
-function getResponsesUrl() {
+function buildSiblingUrl(pathname) {
   const apiUrl = apiUrlInput.value.trim();
 
   if (!apiUrl) return '';
 
   try {
     const url = new URL(apiUrl);
-    url.pathname = '/api/responses';
+    url.pathname = pathname;
     url.search = '';
     url.hash = '';
     return url.toString();
   } catch (error) {
     return '';
   }
-}
-
-function getHealthUrl() {
-  const apiUrl = apiUrlInput.value.trim();
-
-  if (!apiUrl) return '';
-
-  try {
-    const url = new URL(apiUrl);
-    url.pathname = '/api/health';
-    url.search = '';
-    url.hash = '';
-    return url.toString();
-  } catch (error) {
-    return '';
-  }
-}
-
-function updateApiPreview() {
-  apiPreview.textContent = apiUrlInput.value.trim() || 'Not configured';
 }
 
 function updateBackendCard(message, note = '', tone = '') {
@@ -115,32 +91,46 @@ function setStatus(message, type = '') {
   statusRow.className = `status-row ${type}`.trim();
 }
 
-function renderChecklist() {
-  checklistBody.innerHTML = CHECKS.map((item, index) => `
-    <tr>
-      <td data-label="Sr. No">${index + 1}</td>
-      <td data-label="Description of Checks">${item}</td>
-      <td data-label="Status">
-        <select data-role="status">
-          <option value="OK">OK</option>
-          <option value="NOT OK">NOT OK</option>
-        </select>
-      </td>
-      <td data-label="Remarks">
-        <input data-role="remarks" type="text" placeholder="Add remarks" />
-      </td>
-    </tr>
-  `).join('');
+function createChecklistCard(item, index) {
+  return `
+    <article class="check-card" data-index="${index}">
+      <div class="check-card-top">
+        <span class="check-number">${String(index + 1).padStart(2, '0')}</span>
+        <p class="check-label">${item}</p>
+      </div>
+      <div class="status-toggle" role="group" aria-label="${item}">
+        <button type="button" class="toggle-btn is-active" data-role="status-btn" data-value="OK">OK</button>
+        <button type="button" class="toggle-btn" data-role="status-btn" data-value="NOT OK">NOT OK</button>
+      </div>
+      <input data-role="status" type="hidden" value="OK" />
+      <label class="remarks-field">
+        <span>Remarks</span>
+        <input data-role="remarks" type="text" placeholder="Optional remarks" />
+      </label>
+    </article>
+  `;
+}
 
-  checkCount.textContent = String(CHECKS.length);
+function renderChecklist() {
+  checklistBody.innerHTML = CHECKS.map(createChecklistCard).join('');
 }
 
 function collectRows() {
-  return Array.from(checklistBody.querySelectorAll('tr')).map((row, index) => ({
+  return Array.from(checklistBody.querySelectorAll('.check-card')).map((card, index) => ({
     label: CHECKS[index],
-    status: row.querySelector('[data-role="status"]').value,
-    remarks: row.querySelector('[data-role="remarks"]').value.trim()
+    status: card.querySelector('[data-role="status"]').value,
+    remarks: card.querySelector('[data-role="remarks"]').value.trim()
   }));
+}
+
+function resetChecklist() {
+  checklistBody.querySelectorAll('.check-card').forEach((card) => {
+    card.querySelector('[data-role="status"]').value = 'OK';
+    card.querySelectorAll('[data-role="status-btn"]').forEach((button) => {
+      button.classList.toggle('is-active', button.dataset.value === 'OK');
+    });
+    card.querySelector('[data-role="remarks"]').value = '';
+  });
 }
 
 function formatDate(value) {
@@ -157,7 +147,7 @@ function renderResponses(records) {
 
   if (!records.length) {
     recordsList.innerHTML = '';
-    recordsEmpty.textContent = 'No submissions found in MongoDB.';
+    recordsEmpty.textContent = 'No records loaded yet.';
     recordsEmpty.hidden = false;
     return;
   }
@@ -165,9 +155,8 @@ function renderResponses(records) {
   recordsEmpty.hidden = true;
   recordsList.innerHTML = records.map((record) => `
     <article class="record-card">
-      <div class="record-meta">
+      <div class="record-head">
         <strong>${record.inspector || 'Unknown inspector'}</strong>
-        <span>${record.type || 'Checklist'}</span>
         <span>${formatDate(record.createdAt)}</span>
       </div>
       <div class="record-items">
@@ -184,37 +173,35 @@ function renderResponses(records) {
 }
 
 async function checkBackendHealth() {
-  const healthUrl = getHealthUrl();
+  const healthUrl = buildSiblingUrl('/api/health');
 
   if (!healthUrl) {
-    updateBackendCard('Endpoint missing', 'Add a valid submit endpoint to enable health checks.', 'error');
+    updateBackendCard('Missing', 'Add a valid submit endpoint.', 'error');
     return;
   }
-
-  updateBackendCard('Checking connection...', 'Querying the backend health endpoint.', '');
 
   try {
     const response = await fetch(healthUrl);
     const data = await response.json().catch(() => ({}));
 
     if (response.ok && data.ok) {
-      updateBackendCard('Connected', 'Backend and database are available.', 'success');
+      updateBackendCard('Connected', 'Database is available.', 'success');
       return;
     }
 
     if (response.status === 503 && data.databaseReady === false) {
-      updateBackendCard('Database offline', 'Backend is running, but MongoDB is not connected.', 'error');
+      updateBackendCard('Database offline', 'Backend is up, MongoDB is not connected.', 'error');
       return;
     }
 
-    updateBackendCard('Backend issue', data.message || `Health check returned ${response.status}.`, 'error');
+    updateBackendCard('Issue', data.message || `Health check returned ${response.status}.`, 'error');
   } catch (error) {
-    updateBackendCard('Unreachable', 'Unable to reach the backend from this frontend.', 'error');
+    updateBackendCard('Unreachable', 'Unable to reach backend.', 'error');
   }
 }
 
 async function loadResponses() {
-  const responsesUrl = getResponsesUrl();
+  const responsesUrl = buildSiblingUrl('/api/responses');
 
   if (!responsesUrl) {
     setStatus('Enter a valid API URL first.', 'error');
@@ -258,12 +245,6 @@ async function submitChecklist() {
     return;
   }
 
-  const payload = {
-    inspector,
-    type: 'A-Type Ladder',
-    items: collectRows()
-  };
-
   submitButton.disabled = true;
   setStatus('Submitting checklist...');
 
@@ -273,7 +254,11 @@ async function submitChecklist() {
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify(payload)
+      body: JSON.stringify({
+        inspector,
+        type: 'A-Type Ladder',
+        items: collectRows()
+      })
     });
 
     const data = await response.json().catch(() => ({}));
@@ -283,13 +268,7 @@ async function submitChecklist() {
     }
 
     inspectorInput.value = '';
-    checklistBody.querySelectorAll('[data-role="status"]').forEach((element) => {
-      element.value = 'OK';
-    });
-    checklistBody.querySelectorAll('[data-role="remarks"]').forEach((element) => {
-      element.value = '';
-    });
-
+    resetChecklist();
     setStatus(data.message || 'Checklist submitted successfully.', 'success');
     await loadResponses();
     await checkBackendHealth();
@@ -300,17 +279,27 @@ async function submitChecklist() {
   }
 }
 
+checklistBody.addEventListener('click', (event) => {
+  const button = event.target.closest('[data-role="status-btn"]');
+  if (!button) return;
+
+  const card = button.closest('.check-card');
+  const statusInput = card.querySelector('[data-role="status"]');
+  statusInput.value = button.dataset.value;
+
+  card.querySelectorAll('[data-role="status-btn"]').forEach((action) => {
+    action.classList.toggle('is-active', action === button);
+  });
+});
+
 apiUrlInput.value = buildApiUrl('/api/submit');
 apiUrlInput.addEventListener('blur', () => {
   apiUrlInput.value = getNormalizedSubmitUrl(apiUrlInput.value);
-  updateApiPreview();
   checkBackendHealth();
 });
-apiUrlInput.addEventListener('input', updateApiPreview);
 
 renderChecklist();
 renderResponses([]);
-updateApiPreview();
 checkBackendHealth();
 
 submitButton.addEventListener('click', submitChecklist);
