@@ -1,18 +1,57 @@
-const CHECKS = [
-  'Rail damaged or deformed',
-  'Rung broken',
-  'Rung missing',
-  'Rungs clean',
-  'Rung distance uneven',
-  'Bottom non-skid pad damaged or missing',
-  'Top hook damaged or missing',
-  'Rungs loose',
-  'Non-slip bases',
-  'Any other issue'
-];
+const CHECKLISTS = {
+  ladder: {
+    label: 'A-Type Ladder',
+    items: [
+      { label: 'Rail damaged or deformed' },
+      { label: 'Rung broken' },
+      { label: 'Rung missing' },
+      { label: 'Rungs clean' },
+      { label: 'Rung distance uneven' },
+      { label: 'Bottom non-skid pad damaged or missing' },
+      { label: 'Top hook damaged or missing' },
+      { label: 'Rungs loose' },
+      { label: 'Non-slip bases' },
+      { label: 'Any other issue' }
+    ]
+  },
+  wah: {
+    label: 'WAH General Checklist',
+    items: [
+      {
+        label: 'Safety harness',
+        note: 'Check condition, manufacturing date, and approved make. Damaged harness or more than 3 years old should be rejected.'
+      },
+      {
+        label: 'STD / Suspension trauma device',
+        note: 'Ensure the number of suspension trauma devices matches the number of safety harnesses.'
+      },
+      {
+        label: 'Tool lanyard',
+        note: 'Must be ensured for all workmen using tools while working at height.'
+      },
+      {
+        label: 'Safety net',
+        note: 'Damaged net should be segregated or rejected.'
+      },
+      {
+        label: 'Manila rope',
+        note: 'Inspect general condition before use.'
+      },
+      {
+        label: 'Wire rope / lifeline',
+        note: 'Inspect for wear, damage, and safe usability.'
+      },
+      {
+        label: 'A-type ladder',
+        note: 'Confirm the ladder is safe and suitable for use.'
+      }
+    ]
+  }
+};
 
 const checklistBody = document.getElementById('checklistBody');
 const inspectorInput = document.getElementById('inspector');
+const checklistTypeInput = document.getElementById('checklistType');
 const apiUrlInput = document.getElementById('apiUrl');
 const submitButton = document.getElementById('submitBtn');
 const loadButton = document.getElementById('loadBtn');
@@ -23,6 +62,10 @@ const recordsEmpty = document.getElementById('recordsEmpty');
 const backendStatus = document.getElementById('backendStatus');
 const backendHint = document.getElementById('backendHint');
 const recordsCount = document.getElementById('recordsCount');
+
+function getSelectedChecklist() {
+  return CHECKLISTS[checklistTypeInput.value] || CHECKLISTS.ladder;
+}
 
 function getConfiguredApiBaseUrl() {
   const configuredBaseUrl = window.APP_CONFIG?.API_BASE_URL?.trim();
@@ -96,9 +139,12 @@ function createChecklistCard(item, index) {
     <article class="check-card" data-index="${index}">
       <div class="check-card-top">
         <span class="check-number">${String(index + 1).padStart(2, '0')}</span>
-        <p class="check-label">${item}</p>
+        <div>
+          <p class="check-label">${item.label}</p>
+          ${item.note ? `<p class="check-note">${item.note}</p>` : ''}
+        </div>
       </div>
-      <div class="status-toggle" role="group" aria-label="${item}">
+      <div class="status-toggle" role="group" aria-label="${item.label}">
         <button type="button" class="toggle-btn is-active" data-role="status-btn" data-value="OK">OK</button>
         <button type="button" class="toggle-btn" data-role="status-btn" data-value="NOT OK">NOT OK</button>
       </div>
@@ -111,13 +157,20 @@ function createChecklistCard(item, index) {
   `;
 }
 
+function renderChecklistTypes() {
+  checklistTypeInput.innerHTML = Object.entries(CHECKLISTS)
+    .map(([value, checklist]) => `<option value="${value}">${checklist.label}</option>`)
+    .join('');
+  checklistTypeInput.value = CHECKLISTS.wah ? 'wah' : Object.keys(CHECKLISTS)[0];
+}
+
 function renderChecklist() {
-  checklistBody.innerHTML = CHECKS.map(createChecklistCard).join('');
+  checklistBody.innerHTML = getSelectedChecklist().items.map(createChecklistCard).join('');
 }
 
 function collectRows() {
   return Array.from(checklistBody.querySelectorAll('.check-card')).map((card, index) => ({
-    label: CHECKS[index],
+    label: getSelectedChecklist().items[index].label,
     status: card.querySelector('[data-role="status"]').value,
     remarks: card.querySelector('[data-role="remarks"]').value.trim()
   }));
@@ -159,6 +212,7 @@ function renderResponses(records) {
         <strong>${record.inspector || 'Unknown inspector'}</strong>
         <span>${formatDate(record.createdAt)}</span>
       </div>
+      <p class="record-type">${record.type || 'Checklist'}</p>
       <div class="record-items">
         ${(record.items || []).map((item) => `
           <div class="record-item">
@@ -256,7 +310,7 @@ async function submitChecklist() {
       },
       body: JSON.stringify({
         inspector,
-        type: 'A-Type Ladder',
+        type: getSelectedChecklist().label,
         items: collectRows()
       })
     });
@@ -298,9 +352,14 @@ apiUrlInput.addEventListener('blur', () => {
   checkBackendHealth();
 });
 
+renderChecklistTypes();
 renderChecklist();
 renderResponses([]);
 checkBackendHealth();
 
 submitButton.addEventListener('click', submitChecklist);
 loadButton.addEventListener('click', loadResponses);
+checklistTypeInput.addEventListener('change', () => {
+  renderChecklist();
+  setStatus(`${getSelectedChecklist().label} loaded.`);
+});
