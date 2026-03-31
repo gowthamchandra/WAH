@@ -51,6 +51,7 @@ const CHECKLISTS = {
 
 const checklistBody = document.getElementById('checklistBody');
 const inspectorInput = document.getElementById('inspector');
+const contractorInput = document.getElementById('contractor');
 const checklistTypeInput = document.getElementById('checklistType');
 const apiUrlInput = document.getElementById('apiUrl');
 const submitButton = document.getElementById('submitBtn');
@@ -209,7 +210,7 @@ function renderResponses(records) {
   recordsList.innerHTML = records.map((record) => `
     <article class="record-card">
       <div class="record-head">
-        <strong>${record.inspector || 'Unknown inspector'}</strong>
+        <strong>${record.inspector || 'Unknown inspector'}${record.contractor ? ` | ${record.contractor}` : ''}</strong>
         <span>${formatDate(record.createdAt)}</span>
       </div>
       <p class="record-type">${record.type || 'Checklist'}</p>
@@ -285,6 +286,7 @@ async function loadResponses() {
 
 async function submitChecklist() {
   const inspector = inspectorInput.value.trim();
+  const contractor = contractorInput.value.trim();
   const apiUrl = apiUrlInput.value.trim();
 
   if (!inspector) {
@@ -310,6 +312,7 @@ async function submitChecklist() {
       },
       body: JSON.stringify({
         inspector,
+        contractor,
         type: getSelectedChecklist().label,
         items: collectRows()
       })
@@ -322,6 +325,7 @@ async function submitChecklist() {
     }
 
     inspectorInput.value = '';
+    contractorInput.value = '';
     resetChecklist();
     setStatus(data.message || 'Checklist submitted successfully.', 'success');
     await loadResponses();

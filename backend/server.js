@@ -34,6 +34,11 @@ const responseSchema = new mongoose.Schema(
       required: true,
       trim: true
     },
+    contractor: {
+      type: String,
+      default: '',
+      trim: true
+    },
     type: {
       type: String,
       required: true,
@@ -82,7 +87,7 @@ app.post('/api/submit', async (req, res) => {
       return res.status(503).json({ message: 'Database is not connected yet.' });
     }
 
-    const { inspector, type, items } = req.body;
+    const { inspector, contractor, type, items } = req.body;
 
     if (!inspector || !Array.isArray(items) || items.length === 0) {
       return res.status(400).json({ message: 'Inspector name and checklist items are required.' });
@@ -90,6 +95,7 @@ app.post('/api/submit', async (req, res) => {
 
     const saved = await Response.create({
       inspector,
+      contractor,
       type: type || 'A-Type Ladder',
       items
     });
